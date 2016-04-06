@@ -50,7 +50,7 @@ The formula and pillar configuration referenced above should provide a baseline 
 
 ## Vagrant specific information
 
-The included [](Vagrantfile) will start a new VM, bootstrap salt, and run the include formulas.
+The included [Vagrantfile](Vagrantfile) will start a new VM, bootstrap salt, and run the include formulas.
 
 1. It specifies a 'hostname':
 
@@ -65,7 +65,7 @@ The included [](Vagrantfile) will start a new VM, bootstrap salt, and run the in
     config.vm.synced_folder "salt/pillar/", "/srv/pillar/"
     ```
 
-3. Finally it bootstraps and invokes salt in 'standalone' mode in [](salt/minion.yml):
+3. Finally it bootstraps and invokes salt in 'standalone' mode in [salt/minion.yml](salt/minion.yml):
 
     ```
     config.vm.provision :salt do |salt|
@@ -76,4 +76,4 @@ The included [](Vagrantfile) will start a new VM, bootstrap salt, and run the in
     end
     ```
 
-The 'hostname' is pre-appended with 'vagrant-' which causes Salt via [](salt/pillar/top.sls) to load the Vagrant specific pillar information provided in [](salt/pillar/vagrant/init.sls).  Any Vagrant VM specific Salt configuraiton should be added to this file.
+The 'hostname' is pre-appended with 'vagrant-' which causes Salt via [salt/pillar/top.sls](salt/pillar/top.sls) to load the Vagrant specific pillar information provided in [salt/pillar/vagrant/init.sls](salt/pillar/vagrant/init.sls).  Any Vagrant VM specific Salt configuraiton should be added to this file.
