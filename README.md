@@ -37,13 +37,13 @@ sudo salt-call pillar.items
 An example formula has been provided here: [salt/roots/sample1](salt/roots/sample1/).  This formula has four main components:
 
 1. Main formula file: [sample1/init.sls](salt/roots/sample1/init.sls)
-  This is where the bulk of the Salt 'code' should reside.  This is the file that does the bulk of the actual work.
-2. Default parameters: [sample1/default.yaml](salt/roots/sample1/default.yaml)
-  In this file we store default parameters used by the init.sls Salt formula.
+  * This is where the bulk of the Salt 'code' should reside.  This is the file that does the bulk of the actual work.
+2. Default parameters: [sample1/defaults.yaml](salt/roots/sample1/defaults.yaml)
+  * In this file we store default parameters used by the init.sls Salt formula.
 3. OS specific parameters: [sample1/map.jinja](salt/roots/sample1/map.jinja)
-  This file merges OS specific parameters into the default parameters.  It as merges in any pillar configuration specified in the 'sample1:lookup' pillar.
+  * This file merges OS specific parameters into the default parameters.  It as merges in any pillar configuration specified in the 'sample1:lookup' pillar.
 4. Pillar data and examples: [pillar.example](salt/pillar/sample1/init.sls) for sample1
-  Normally this data is stored in pillars in the Salt 'master', however in this development environment all pillar data is specified locally in [salt/pillar](salt/pillar/) to ease the development process.
+  * Normally this data is stored in pillars in the Salt 'master', however in this development environment all pillar data is specified locally in [salt/pillar](salt/pillar/) to ease the development process.
 
 The formula and pillar configuration referenced above should provide a baseline e for developing and testing new formulas.
 
