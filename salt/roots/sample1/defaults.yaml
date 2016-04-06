@@ -1,0 +1,6 @@
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
+
+sample1:
+  repo_dir: /root/sample1
+  user: root
