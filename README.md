@@ -53,22 +53,27 @@ The formula and pillar configuration referenced above should provide a baseline 
 The included [](Vagrantfile) will start a new VM, bootstrap salt, and run the include formulas.
 
 1. It specifies a 'hostname':
-  ```
-  config.vm.hostname = "vagrant-salt-dev"
-  ```
+
+    ```
+    config.vm.hostname = "vagrant-salt-dev"
+    ```
+
 2. The Vagrantfile will mount the Salt formula root and Pillar data:
-  ```
-  config.vm.synced_folder "salt/roots/", "/srv/salt/"
-  config.vm.synced_folder "salt/pillar/", "/srv/pillar/"
-  ```
-3. Finally it bootstraps and invokes salt in 'standalone' mode in [](salt/minion.yml)
-  ```
-  config.vm.provision :salt do |salt|
-    salt.minion_config = "salt/minion.yml"
-    salt.run_highstate = true
-    salt.colorize = true
-    salt.log_level = 'info'
-  end
-  ```
+
+    ```
+    config.vm.synced_folder "salt/roots/", "/srv/salt/"
+    config.vm.synced_folder "salt/pillar/", "/srv/pillar/"
+    ```
+
+3. Finally it bootstraps and invokes salt in 'standalone' mode in [](salt/minion.yml):
+
+    ```
+    config.vm.provision :salt do |salt|
+      salt.minion_config = "salt/minion.yml"
+      salt.run_highstate = true
+      salt.colorize = true
+      salt.log_level = 'info'
+    end
+    ```
 
 The 'hostname' is pre-appended with 'vagrant-' which causes Salt via [](salt/pillar/top.sls) to load the Vagrant specific pillar information provided in [](salt/pillar/vagrant/init.sls).  Any Vagrant VM specific Salt configuraiton should be added to this file.
