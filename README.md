@@ -5,7 +5,7 @@ This repo is a development sandbox for Saltstack with Vagrant. It provides a bas
 
 ## Getting started
 
-Bootstrapping the new VM is easy once Vagrant is installed (see [Setup - MacOSX](Setup_MacOSX.md)).  Simply follow the following steps:
+Bootstrapping the new VM is easy once Vagrant is installed (see [Setup - MacOSX](Setup_MacOSX.md)).  Simply follow these steps:
 ```
 vagrant up --provider virtualbox
 vagrant ssh     # This gives you a terminal in the VM
