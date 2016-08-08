@@ -1,0 +1,24 @@
+---
+kind: "ReplicationController"
+apiVersion: "v1"
+metadata: 
+  name: "cockpit-kube"
+  namespace: "kube-system"
+  labels: 
+    name: "cockpit-kube"
+spec: 
+  replicas: 1
+  selector: 
+    name: "cockpit-kube"
+  template: 
+    metadata: 
+      labels: 
+        name: "cockpit-kube"
+    spec: 
+      containers: 
+        - name: "cockpit-kube"
+          image: "onorua/cockpit:kubernetes"
+          ports: 
+            - 
+              containerPort: 9090
+              protocol: "TCP"

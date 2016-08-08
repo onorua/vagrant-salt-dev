@@ -1,0 +1,31 @@
+[Unit]
+Description=etcd key-value store
+Documentation=https://github.com/coreos/etcd
+
+[Service]
+User=etcd
+Type=notify
+Environment=ETCD_DATA_DIR={{salt["pillar.get"]("k8s:etcd:data_dir", "/srv/data/etcd")}}/{{etcd.name}}
+Environment=ETCD_NAME={{etcd.name}}
+Environment=ETCD_HEARTBEAT_INTERVAL=200
+Environment=ETCD_ELECTION_TIMEOUT=2000
+ExecStart=/usr/local/bin/etcd \
+    --initial-cluster-state new \
+    --initial-cluster-token mycluster \
+    --listen-client-urls http://{{etcd.address}}:{{etcd.client_port}} \
+    --advertise-client-urls http://{{etcd.address}}:{{etcd.client_port}} \
+    --listen-peer-urls  http://{{etcd.address}}:{{etcd.server_port}} \
+    --initial-advertise-peer-urls http://{{etcd.address}}:{{etcd.server_port}} \
+    --snapshot-count=5000 \
+{% if grains.vagrant is not defined -%}
+    --discovery-srv '{{pillar.get("dns_domain", "fake.me")}}'
+{% else -%}
+    --initial-cluster {{etcd.name}}=http://{{etcd.address}}:{{etcd.server_port}}
+{% endif -%}
+
+Restart=always
+RestartSec=10s
+LimitNOFILE=40000
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,51 @@
+$ORIGIN .
+$TTL {{ttl|default("1800")}}
+{{domain|lower}}  SOA    ns1.{{domain|lower}}. root.ns1.{{domain|lower}}. (
+                                4196       ; serial
+                                604800     ; refresh (1 week)
+                                86400      ; retry (1 day)
+                                2419200    ; expire (4 weeks)
+                                604800     ; minimum (1 week)
+                                )
+                        A       {{myipv4}}
+{% for hostname, ip in nsservers.iteritems() %}
+                        NS      {{hostname|lower}}.{{domain|lower}}.
+{% endfor %}
+$ORIGIN {{domain|lower}}.
+$TTL {{ttl|default("1800")}}
+{% for hostname, ip in nsservers.iteritems() -%}
+{{hostname|lower}}            A       {{ip}}
+{% endfor -%}
+{% for hostname, ip in arecords.iteritems() -%}
+{% if ip is string -%}
+{{hostname|lower}}            A       {{ip}}
+{% else -%}
+{{hostname|lower}}            A       {{ip|first}}
+{%- for i in ip[1:] %}
+                  A       {{i}}
+{% endfor -%}
+{% endif -%}
+{% endfor -%}
+{% for name, alias in cnames.iteritems() -%}
+{{name|lower}}            CNAME       {{alias|lower}}
+{% endfor -%}
+
+{% for name, server in srv_records.iteritems() -%}
+{% if server is string -%}
+{{name|lower}}            SRV       {{server|lower}}
+{% else -%}
+{%- for i in server %}
+{{name|lower}}            SRV       {{i|lower}}
+{% endfor -%}
+{% endif -%}
+{% endfor -%}
+
+{%- if "_etcd-server._tcp" not in srv_records and salt["pillar.get"]("k8s:etcd:nodes")%}
+{%- for i in salt["pillar.get"]("k8s:etcd:nodes") %}
+{%- for hostname, ip in arecords.iteritems() -%}
+{%- if ip == i.address %}
+_etcd-server._tcp            SRV   0 0 {{i.server_port}}  {{hostname|lower}}
+{% endif -%}
+{% endfor -%}
+{% endfor -%}
+{% endif %}

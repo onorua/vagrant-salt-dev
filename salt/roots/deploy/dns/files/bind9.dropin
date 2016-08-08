@@ -1,0 +1,4 @@
+[Service]
+ExecStart=
+ExecStart=/usr/sbin/named -f -u bind -4
+

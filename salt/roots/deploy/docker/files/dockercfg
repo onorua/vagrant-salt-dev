@@ -1,0 +1,8 @@
+{
+{% for registry in docker_auth %}
+        "{{registry.url}}": {
+                "auth": "{{registry.auth}}",
+                "email": "{{registry.email}}"
+        }{% if loop.index != docker_auth|length %},{% endif %}
+{% endfor %}
+}

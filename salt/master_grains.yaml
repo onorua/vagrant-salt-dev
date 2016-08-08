@@ -1,0 +1,5 @@
+roles:
+    - kubernetes-master
+    - kubernetes-pool
+    - dns-server
+

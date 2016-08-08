@@ -1,0 +1,6 @@
+{"user":"admin"}
+{"user":"kube2sky"}
+{"user":"scheduler"}
+{"user":"kubelet"}
+{"user":"default", "readonly": true}
+{"user":"monitoring", "readonly": true}

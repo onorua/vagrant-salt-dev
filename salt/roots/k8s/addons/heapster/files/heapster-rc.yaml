@@ -1,0 +1,50 @@
+{% set requests_memory = "200Mi" -%}
+{% set limit_memory = "200Mi" -%}
+{% if salt["pillar.get"]('k8s:num_nodes') %}
+{% set num_nodes = salt["pillar.get"]('k8s:num_nodes', -1) -%}
+{% else -%}
+{% set nodes = salt["pillar.get"]('node_labels', {}) -%}
+{% set num_nodes = nodes|length -%}
+{% endif -%}
+{% if num_nodes >= 0 -%}
+  {% set requests_memory = (200 + num_nodes * 3)|string + "Mi" -%}
+  {% set limit_memory = (200 + num_nodes * 30)|string + "Mi" -%}
+{% endif -%}
+
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: heapster-v14
+  namespace: kube-system
+  labels:
+    k8s-app: heapster
+    version: v14
+    kubernetes.io/cluster-service: "true"
+spec:
+  replicas: 1
+  selector:
+    k8s-app: heapster
+    version: v14
+  template:
+    metadata:
+      labels:
+        k8s-app: heapster
+        version: v14
+        kubernetes.io/cluster-service: "true"
+    spec:
+      containers:
+        - image: gcr.io/google_containers/heapster:v0.20.0-alpha8
+          name: heapster
+          resources:
+            # keep request = limit to keep this container in guaranteed class
+            limits:
+              cpu: 100m
+              memory: {{ limit_memory }}
+            requests:
+              cpu: 100m
+              memory: {{ requests_memory }}
+          command:
+            - /heapster
+            - --source=kubernetes:''
+            - --metric_resolution=60s
+

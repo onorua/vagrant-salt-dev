@@ -1,0 +1,44 @@
+{% set ipv6 = "" -%}
+{% if pillar.get("ipv6") is defined and pillar.get("ipv6") in ["false", "true"]-%}
+{% set ipv6 = "--ipv6=" ~ pillar.get("ipv6") -%}
+{% endif -%}
+{% set loglevel = "" -%}
+{% if pillar.get("docker_loglevel") is defined and pillar.get("docker_loglevel") in ["info", "warning", "error"] -%}
+{% set loglevel = " -l " ~ pillar.get("docker_loglevel") -%}
+{% endif -%}
+{% set bip = "" -%}
+{% set mtu = "1450" -%}
+{% if salt["pillar.get"]("k8s:network_provider", "flannel").lower() == "flannel" -%}
+    {% set bip = "${FLANNEL_SUBNET}" -%}
+    {% set mtu = "${FLANNEL_MTU}" -%}
+{% else -%}
+    {% set bip = bridge_ip -%}
+    {% set mtu = docker_mtu -%}
+{% endif -%}
+[Unit]
+{%- if salt["pillar.get"]("k8s:network_provider").lower() == "flannel" %}
+After=flanneld.service
+Requires=flanneld.service
+{% endif -%}
+Wants=kubelet.service
+Before=kubelet.service
+
+[Service]
+{%- if salt["pillar.get"]("k8s:network_provider").lower() == "flannel" %}
+EnvironmentFile=/run/flannel/subnet.env
+ExecStartPre=-/sbin/ip link del docker0
+{% endif -%}
+ExecStartPre=/bin/rm -rf /var/lib/docker/network
+ExecStart=
+ExecStart=/usr/bin/docker daemon {{loglevel}} -s overlay --iptables=false --ip-masq=false {%- for dns_server in pillar.get("dns_servers", []) %} --dns={{dns_server}}  {%- endfor %} {{ipv6}} --bip={{bip}} --mtu={{mtu}}
+Restart=always
+MountFlags=slave
+LimitNOFILE=1048576
+LimitNPROC=1048576
+{% if salt['grains.get']("systemd:version")|int >= 228 -%}
+TasksMax=1048576
+{% endif -%}
+LimitCORE=infinity
+RestartSec=2s
+StartLimitInterval=0
+

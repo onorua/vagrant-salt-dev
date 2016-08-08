@@ -1,0 +1,20 @@
+{% set daemon_args = "$DAEMON_ARGS" -%}
+{% if grains['os_family'] == 'RedHat' -%}
+	{% set daemon_args = "" -%}
+{% endif -%}
+{# TODO(azure-maintainer): add support for distributing kubeconfig with token to kube-proxy #}
+{# so it can use https #}
+
+{% set log_level = salt['pillar.get']("k8s:kube-proxy_log_level", salt['pillar.get']("k8s:log_level", "--v=2")) -%}
+
+{% if 'kubernetes-master' in  grains.get('roles', {}) -%}
+  {% set api_servers_with_port = "--master=https://127.0.0.1:6443" -%}
+{% else -%}
+{% set api_servers_with_port = "--master=" ~ pillar.get("api_server_external_url", "https://10.116.254.3:8443") -%}
+{% endif -%}
+
+{% set kubeconfig = "--kubeconfig=/var/lib/kube-proxy/kubeconfig" -%}
+
+{% set proxy_mode = "--proxy_mode=" ~ pillar.get("proxy_mode", "iptables") %}
+
+DAEMON_ARGS="{{daemon_args}} {{proxy_mode}} {{api_servers_with_port}} {{kubeconfig}} {{log_level}}"

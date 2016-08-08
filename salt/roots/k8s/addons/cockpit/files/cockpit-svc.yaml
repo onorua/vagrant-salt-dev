@@ -1,0 +1,46 @@
+---
+kind: "Service"
+apiVersion: "v1"
+metadata: 
+  name: "cockpit-kube"
+  namespace: "kube-system"
+  labels: 
+    name: "cockpit-kube"
+spec: 
+  type: "ClusterIP"
+  ports: 
+    - protocol: "TCP"
+      port: {{salt["pillar.get"]('k8s:cockpit:port', 9000) }}
+      targetPort: 9090
+{%- if salt["pillar.get"]('k8s:cockpit:external_ips') %}
+  externalIPs:
+{%- for ip in salt["pillar.get"]('k8s:cockpit:external_ips') %}
+    - {{ip}}
+{%- endfor %}
+{%- endif %}
+  selector: 
+    name: "cockpit-kube"
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

@@ -1,0 +1,23 @@
+---
+  apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    labels:
+      name: "kubedash"
+      kubernetes.io/cluster-service: "true"
+    name: "kubedash"
+    namespace: "kube-system"
+  spec:
+    type: "LoadBalancer"
+    ports:
+      - port: {{salt["pillar.get"]('k8s:kube-dash:port', 88) }}
+        targetPort: 8289
+{%- if salt["pillar.get"]('k8s:kube-dash:external_ips') %}
+    externalIPs:
+{%- for ip in salt["pillar.get"]('k8s:kube-dash:external_ips') %}
+      - {{ip}}
+{%- endfor %}
+{%- endif %}
+    selector:
+      name: "kubedash"
+

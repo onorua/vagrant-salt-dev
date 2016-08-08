@@ -5,6 +5,8 @@ base:
   '*':
   - base
   - sample1
+  - k8s
+  - dns
 
   'vagrant*':
   - vagrant

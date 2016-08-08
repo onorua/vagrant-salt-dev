@@ -1,0 +1,16 @@
+[Unit]
+After=network-online.target 
+Wants=network-online.target
+Description=flannel is an etcd backed overlay network for containers
+
+[Service]
+Type=notify
+{% if 'kubernetes-master' in grains.get("roles") -%}
+ExecStartPre=/usr/local/bin/flannel_provisioning
+{% endif -%}
+ExecStart=/usr/local/bin/flanneld  \
+        -etcd-endpoints={%for item in salt["pillar.get"]("k8s:etcd:nodes") %}http://{{item.address}}:{{item.client_port}}{% if loop.index < salt["pillar.get"]("k8s:etcd_nodes")|length %},{%endif%}{%endfor %} \
+        -iface={{salt["pillar.get"]("k8s:flannel:iface", "bond0")}} \
+        -ip-masq={{salt["pillar.get"]("k8s:flannel:ip-masq", "true")}}  \
+        -etcd-prefix=/{{salt["pillar.get"]("k8s:flannel:etcd-prefix", pillar.get("cluster_domain", "ot"))}}/network
+Restart=always

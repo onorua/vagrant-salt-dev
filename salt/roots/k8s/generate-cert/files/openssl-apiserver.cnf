@@ -1,0 +1,26 @@
+{% set api_ips = ["127.0.0.1", salt['ipcalc.first_host'](pillar.get("service_cluster_ip_range")), ] -%}
+{% for ip in salt["pillar.get"]("k8s:api_servers") -%}
+{% if ip.split(":")[0] not in api_ips -%}
+{% do api_ips.append(ip.split(":")[0]) -%}
+{% endif -%}
+{% endfor -%}
+{% if pillar.get("api_server_external_url") and pillar.get("api_server_external_url").split(":")[1].split("/")[-1] not in api_ips -%}
+{% do api_ips.append(pillar.get("api_server_external_url").split(":")[1].split("/")[-1]) -%}
+{% endif -%}
+[req]
+req_extensions = v3_req
+distinguished_name = req_distinguished_name
+[req_distinguished_name]
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = kubernetes
+DNS.2 = kubernetes.default
+DNS.3 = kubernetes.default.svc
+DNS.4 = kubernetes.default.svc.cluster.local
+DNS.5 = kubernetes.{{pillar.get("dns_domain")}}
+{% for i in api_ips -%}
+IP.{{loop.index}} = {{i}}
+{% endfor %}

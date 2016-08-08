@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fluentd-elasticsearch
+  namespace: kube-system
+  labels:
+    k8s-app: fluentd-logging
+spec:
+  imagePullPolicy: PullIfNotPresent
+  containers:
+  - name: fluentd-elasticsearch
+    image: gcr.io/google_containers/fluentd-elasticsearch:1.15
+{% if grains.vagrant is not defined %}
+    resources:
+      limits:
+        memory: 200Mi
+      requests:
+        cpu: 100m
+        memory: 200Mi
+{% endif %}
+    volumeMounts:
+    - name: varlog
+      mountPath: /var/log
+    - name: varlibdockercontainers
+      mountPath: /var/lib/docker/containers
+      readOnly: true
+    - name: config
+      mountPath: /etc/td-agent
+      readOnly: true
+    ports:
+    - containerPort: 514
+      name: proxy-default
+      protocol: UDP
+      containerPort: 514
+      hostPort: 514
+{% if 'kubernetes-master' in  grains.get('roles', {}) %}
+      hostIP: 0.0.0.0
+{% else %}
+      hostIP: 127.0.0.1
+{% endif %}
+    - containerPort: 5514
+      name: proxy-cisco     # CISCO ASA specific proxy
+      protocol: UDP
+      containerPort: 5514
+      hostPort: 5514
+{% if 'kubernetes-master' in  grains.get('roles', {}) %}
+      hostIP: 0.0.0.0
+{% else %}
+      hostIP: 127.0.0.1
+{% endif %}
+  terminationGracePeriodSeconds: 30
+  volumes:
+  - name: varlog
+    hostPath:
+      path: /var/log
+  - name: varlibdockercontainers
+    hostPath:
+      path: /var/lib/docker/containers
+  - name: config
+    hostPath:
+      path: /etc/td-agent
+  dnsPolicy: Default  # Don't use cluster DNS.

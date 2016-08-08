@@ -1,0 +1,3 @@
+export ETCD_PREFIX='{{salt["pillar.get"]("k8s:flannel:etcd-prefix", pillar.get("cluster_domain", "ot"))}}'
+
+ETCD_LIST=({% for etcd in salt["pillar.get"]("k8s:etcd:nodes") %}"{{etcd.address}}:{{etcd.client_port}}" {%endfor%})

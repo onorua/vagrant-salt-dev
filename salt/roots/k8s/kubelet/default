@@ -1,0 +1,177 @@
+{% set daemon_args = "$DAEMON_ARGS" -%}
+{% if grains['os_family'] == 'RedHat' -%}
+  {% set daemon_args = "" -%}
+{% endif -%}
+
+# Disable registration for the kubelet running on the master on GCE.
+# TODO(roberthbailey): Make this configurable via an env var in config-default.sh
+{% if 'kubernetes-master' in  grains.get('roles', {}) -%}
+  {% set api_servers_with_port = "--api_servers=https://127.0.0.1:6443" -%}
+{% else -%}
+{% set api_servers_with_port = "--api_servers=" ~ pillar.api_server_external_url|default("https://10.116.254.3:8443") -%}
+{% endif -%}
+
+{% set cloud_provider = "" -%}
+{% if grains.cloud is defined -%}
+  {% set cloud_provider = "--cloud_provider=" + grains.cloud -%}
+{% endif -%}
+
+{% set config = "--config=/etc/kubernetes/manifests" -%}
+{% set hostname_override = "" %}
+{% if grains.fqdn %}
+   {% set hostname_override = " --hostname_override=" + grains['fqdn'] -%}
+{% endif %}
+
+{% set cluster_dns = "" %}
+{% set cluster_domain = "" %}
+{% if pillar.get('enable_cluster_dns', '').lower() == 'true' %}
+  {% set cluster_dns = "--cluster_dns=" + pillar.get("cluster_dns", "") %}
+  {% set cluster_domain = "--cluster_domain=" + pillar.get('cluster_domain', "cluster.local") %}
+{% endif %}
+
+{% set docker_root = "" -%}
+{% if grains.docker_root is defined -%}
+  {% set docker_root = " --docker_root=" + grains.docker_root|string -%}
+{% endif -%}
+
+{% set max_dead_containers = "" -%}
+{% if pillar.max_dead_containers is defined -%}
+  {% set max_dead_containers = " --maximum-dead-containers=" + pillar.max_dead_containers|string -%}
+{% endif -%}
+
+{% set max_dead_per_container = "" -%}
+{% if pillar.max_dead_per_container is defined -%}
+  {% set max_dead_per_container = " --maximum-dead-containers-per-container=" + pillar.max_dead_per_container|string -%}
+{% endif -%}
+
+{% set max_container_ttl = "" -%}
+{% if pillar.max_container_ttl is defined -%}
+  {% set max_container_ttl = " --minimum-container-ttl-duration=" + pillar.max_container_ttl|string -%}
+{% endif -%}
+
+{% set image_gc_high = "" -%}
+{% if pillar.image_gc_high is defined -%}
+  {% set image_gc_high = " --image-gc-high-threshold=" + pillar.image_gc_high|string -%}
+{% endif -%}
+
+{% set image_gc_low = "" -%}
+{% if pillar.image_gc_low is defined -%}
+  {% set image_gc_low = " --image-gc-low-threshold=" + pillar.image_gc_low|string -%}
+{% endif -%}
+
+{% set configure_cbr0 = "" -%}
+{% if pillar['allocate_node_cidrs'] is defined -%}
+  {% set configure_cbr0 = "--configure-cbr0=" + pillar['allocate_node_cidrs'] -%}
+{% endif -%}
+
+{% set chaos_chance = "" -%}
+{% if pillar['chaos_chance'] is defined -%}
+  {% set chaos_chance = "--chaos-chance=" ~ pillar['chaos_chance'] -%}
+{% endif -%}
+
+{% set max_pods = "" -%}
+{% if pillar['max_pods'] is defined -%}
+  {% set max_pods = "--max-pod=" ~ pillar['max_pods'] -%}
+{% endif -%}
+
+
+{% set cgroup_root = "" -%}
+{% set system_container = "" -%}
+{% set kubelet_container = "" -%}
+{% set runtime_container = "" -%}
+{% set enable_custom_metrics = "" -%}
+{% set node_labels = "" %}
+{% set experimental_flannel_overlay = "" -%}
+{% set pod_cidr = "" %}
+{% set network_plugin = "" -%}
+{% set reconcile_cidr_args = "" -%}
+{% set kubelet_root = "" -%}
+{% set babysit_daemons = "" -%}
+{% set non_masquerade_cidr = "" -%}
+
+{% if not  salt["pillar.get"]("k8s:cluster_version").startswith("v1.1") %}
+
+{# 
+config.get will traverse following datastores in the order:
+data stores in this order, returning the first match found:
+    Minion config file
+    Minion's grains
+    Minion's pillar data
+    Master config file
+#}
+
+{% if salt["config.get"]("kubelet_root", "") != "" -%}
+  {% set kubelet_root = " --root-dir=" + salt["config.get"]("kubelet_root") -%}
+{% endif -%}
+
+{% if grains['cloud'] is defined and grains.cloud in [ 'aws', 'gce' ]  %}
+  {% set babysit_daemons = "--babysit-daemons=true" -%}
+{% endif -%}
+
+# Setup cgroups hierarchies.
+{% if grains['os_family'] == 'Debian' -%}
+  {% if grains.get('init')  == "systemd" %}
+    {% set cgroup_root = "--cgroup-root=docker" -%}
+  {% else %}
+    {% set cgroup_root = "--cgroup-root=/" -%}
+    {% set system_container = "--system-cgroups=/system" -%}
+    {% set runtime_container = "--runtime-cgroups=/docker-daemon" -%}
+    {% set kubelet_container= "--kubelet-cgroups=/kubelet" -%}
+  {% endif %}
+{% endif -%}
+{% if grains['oscodename'] in ['vivid','wily'] -%}
+  {% set cgroup_root = "--cgroup-root=docker" -%}
+{% endif -%}
+
+{% if pillar['enable_custom_metrics'] is defined -%}
+  {% set enable_custom_metrics="--enable-custom-metrics=" + pillar['enable_custom_metrics'] %}
+{% endif -%}
+
+{% if pillar['node_labels'] is defined -%}
+{% if grains.get("fqdn") in pillar.get('node_labels', {}) -%}
+  {% set labels = [] %}
+  {% for k, v in pillar.get('node_labels', {}).get(grains.get("fqdn"), {}).iteritems() %}
+      {% do labels.append(k ~ "=" ~ v ) %}
+  {% endfor %}
+  {% set node_labels="--node-labels=" ~ labels|join(",") %}
+{# add default specification 
+{% else %}
+  {% set node_labels="--node-labels=" + pillar['node_labels'] %}
+#}
+{% endif -%}
+{% endif -%}
+
+{% if pillar.get('network_provider', '').lower() == 'flannel' and 'kubernetes-master' not in grains.get('roles', {}) %}
+  {% set experimental_flannel_overlay = "--experimental-flannel-overlay=true" %}
+{% endif -%}
+
+{% if 'kubernetes-master' in grains.get('roles') %}
+  {% if grains.get('cbr-cidr') %}
+    {% set pod_cidr = "--pod-cidr=" + grains['cbr-cidr'] %}
+  {% elif api_servers_with_port == '' and pillar.get('network_provider', '').lower() == 'kubenet' %}
+    # Kubelet standalone mode needs a PodCIDR since there is no controller-manager
+    {% set pod_cidr = "--pod-cidr=10.76.0.0/16" %}
+  {% endif -%}
+{% endif %}
+
+{% if pillar.get('network_provider', '').lower() == 'opencontrail' %}
+  {% set network_plugin = "--network-plugin=opencontrail" %}
+{% elif pillar.get('network_provider', '').lower() == 'kubenet' %}
+  {% set network_plugin = "--network-plugin=kubenet" -%}
+  {% if reconcile_cidr_args == '' -%}
+    {% set reconcile_cidr_args =  "--reconcile-cidr=true" -%}
+  {% endif -%}
+{% endif -%}
+
+{% if salt["pillar.get"]("k8s:cluster_cidr") %}
+{% set non_masquerade_cidr = "--non-masquerade-cidr=" ~ salt["pillar.get"]("k8s:cluster_cidr") %}
+{%endif%}
+
+{% endif %}
+
+{% set cpu_cfs_quota = "--cpu-cfs-quota=" ~ salt['pillar.get']('k8s:enable_cpu_cfs_quota', true)|string|lower %}
+
+{% set log_level = salt['pillar.get']("k8s:kubelet_log_level", salt['pillar.get']("k8s:log_level", "--v=2")) -%}
+
+DAEMON_ARGS="{{daemon_args}} {{cpu_cfs_quota}} {{max_dead_containers}} {{max_pods}} {{chaos_chance}} {{max_dead_per_container}} {{max_container_ttl}} {{image_gc_high}} {{image_gc_low}} {{api_servers_with_port}} {{hostname_override}} {{cloud_provider}} {{config}} --allow_privileged={{pillar.get('allow_privileged', false)|string|lower}} {{log_level}} {{cluster_dns}} {{cluster_domain}} {{docker_root}} {{configure_cbr0}} --kubeconfig=/var/lib/kubelet/kubeconfig {{experimental_flannel_overlay}} {{kubelet_root}} {{cgroup_root}} {{system_container}} {{pod_cidr}} {{network_plugin}} {{reconcile_cidr_args}} {{enable_custom_metrics}} {{runtime_container}} {{kubelet_container}} {{node_labels}} {{babysit_daemons}} {{non_masquerade_cidr}}" 
+

@@ -1,0 +1,85 @@
+acl prime {
+  localhost;
+  127.0.0.1/32;
+{% if allowed_networks is defined %}
+{% for network in allowed_networks %}
+{% if network.endswith(";") %}
+  {{network}}
+{% else %}
+  {{network}};
+{%endif %}
+{% endfor %}
+{% else %}
+  10.116.0.0/16;
+  172.16.252.0/24;
+  192.168.0.0/16;
+{% endif %}
+};
+
+logging {
+  category lame-servers { null; };
+  category edns-disabled { null; };
+};
+
+
+options {
+        directory "/var/cache/bind";
+
+        // hardening
+        version "Secured DNS server";
+        server-id none;
+        allow-transfer {none;};
+        minimal-responses yes;
+
+        // If there is a firewall between you and nameservers you want
+        // to talk to, you may need to fix the firewall to allow multiple
+        // ports to talk.  See http://www.kb.cert.org/vuls/id/800113
+
+        // If your ISP provided one or more IP addresses for stable
+        // nameservers, you probably want to use them as forwarders.
+        // Uncomment the following block, and insert the addresses replacing
+        // the all-0's placeholder.
+
+        forwarders {
+{% if forwarders is defined %}
+{%for server in forwarders %}
+{% if server.endswith(";") %}
+  {{server}}
+{% else %}
+  {{server}};
+{%endif %}
+{%endfor%}
+{% else %}
+                8.8.8.8;
+                8.8.4.4;
+{% endif %}
+        };
+
+        recursion yes;
+        allow-query { prime; };
+        
+        max-cache-ttl 60;
+        max-ncache-ttl 60;
+        
+        //========================================================================
+        // If BIND logs error messages about the root key being expired,
+        // you will need to update your keys.  See https://www.isc.org/bind-keys
+        //========================================================================
+        dnssec-validation auto;
+
+        {% set listen_addresses = ["127.0.0.1"] -%}
+        {% for server in salt['pillar.get']('resolver:nameservers', []) -%}
+            {% if server in grains['ipv4'] and server not in listen_addresses -%}
+                {% do listen_addresses.append(server) -%}
+            {% endif -%}
+        {% endfor -%}
+        {% if myipv4 not in listen_addresses -%}
+            {% do listen_addresses.append(myipv4) -%}
+        {% endif -%}
+
+        listen-on { {{ listen_addresses|join(";") }}; };
+
+        auth-nxdomain no;    # conform to RFC1035
+//        listen-on-v6 { any; };
+};
+

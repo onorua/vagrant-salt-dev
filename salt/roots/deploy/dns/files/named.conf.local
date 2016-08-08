@@ -1,0 +1,49 @@
+//
+// Do any local configuration here
+//
+
+// Consider adding the 1918 zones here, if they are not used in your
+// organization
+//include "/etc/bind/zones.rfc1918";
+
+zone "psc01.smctr.net" {
+        type master;
+        file "/etc/bind/db.psc01.smctr.net";
+        notify yes;
+};
+
+zone "docker-registry.smctr.net" {
+        type master;
+        file "/etc/bind/db.docker-registry.smctr.net";
+        notify yes;
+};
+
+zone "kubernetes.default.svc.cluster.local" {
+        type master;
+        file "/etc/bind/db.kubernetes.default.svc.cluster.local";
+        notify yes;
+};
+
+zone "kubernetes.default.cluster.local" {
+        type master;
+        file "/etc/bind/db.kubernetes.default.cluster.local";
+        notify yes;
+};
+
+zone "k8s.otlabs.fr" {
+        type master;
+        file "/etc/bind/db.k8s.otlabs.fr";
+        notify yes;
+};
+
+zone "gcm.googleapis.com." {
+        type forward;
+        forward only;
+        forwarders { 8.8.8.8; 8.8.4.4; };
+};
+
+zone "gcm.l.google.com." {
+        type forward;
+        forward only;
+        forwarders { 8.8.8.8; 8.8.4.4; };
+};

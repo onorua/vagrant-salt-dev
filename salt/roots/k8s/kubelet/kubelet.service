@@ -1,0 +1,21 @@
+{% if grains['os_family'] == 'RedHat' -%}
+{% set environment_file = '/etc/sysconfig/kubelet'-%}
+{% else -%}
+{% set environment_file = '/etc/default/kubelet' -%}
+{% endif -%}
+[Unit]
+Description=Kubernetes Kubelet Server
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=docker.service
+Requires=docker.service
+BindsTo=docker.service
+
+[Service]
+EnvironmentFile={{ environment_file }}
+ExecStart=/usr/local/bin/kubelet "$DAEMON_ARGS"
+SuccessExitStatus=2
+KillMode=process
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
